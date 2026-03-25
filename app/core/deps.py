@@ -4,10 +4,11 @@ from redis.asyncio import Redis, ConnectionPool
 from app.config.config import settings
 
 from typing import Optional, Generator
-from fastapi import Depends, HTTPException, status, Header
+from fastapi import Depends, HTTPException, status, Header, Request
 from jose import jwt, JWTError
 from pydantic import ValidationError
 from sqlalchemy.future import select
+
 
 from app.models.user import UserMain as User  # 你的数据库模型
 from .token import TokenPayload  # 你的 Token Payload Schema

@@ -37,13 +37,31 @@ class ProductMain(Base):
     )
     images: Mapped[List["ProductImage"]] = relationship(
         'ProductImage', back_populates="product")
-    detail: Mapped["ProductDetail"] = relationship(
-        'ProductDetail', back_populates="product", uselist=False)
     skus: Mapped[List["ProductSku"]] = relationship(
         'ProductSku', back_populates="product")
+    comments: Mapped[List["ProductComment"]] = relationship(
+        'ProductComment', back_populates="product")
 
-    def to_dict(self):
-        return {c.name: getattr(self, c.name) for c in self.__table__.columns if not isinstance(getattr(self, c.name), datetime)}
+
+class ProductComment(Base):
+    __tablename__ = "product_comment"
+    id: Mapped[BIGINT] = mapped_column(
+        BIGINT, primary_key=True, autoincrement=True)
+    product_id: Mapped[BIGINT] = mapped_column(
+        BIGINT, ForeignKey("product_main.id"))
+    user_id: Mapped[BIGINT] = mapped_column(BIGINT)
+    content: Mapped[str] = mapped_column(Text)
+    score: Mapped[int] = mapped_column(Integer, default=5)  # 评分，默认5分
+    username: Mapped[str] = mapped_column(String(64))  # 评论用户名
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now)
+
+    product: Mapped["ProductMain"] = relationship(
+        "ProductMain", back_populates="comments")
+
+
+def to_dict(self):
+    return {c.name: getattr(self, c.name) for c in self.__table__.columns if not isinstance(getattr(self, c.name), datetime)}
 
 
 class Category(Base):
@@ -80,22 +98,6 @@ class ProductSku(Base):
         DateTime, default=datetime.now, onupdate=datetime.now)
     product: Mapped["ProductMain"] = relationship(
         "ProductMain", back_populates="skus")
-
-
-class ProductDetail(Base):
-    __tablename__ = "product_detail"
-    id: Mapped[BIGINT] = mapped_column(
-        BIGINT, primary_key=True, autoincrement=True)
-    product_id: Mapped[BIGINT] = mapped_column(
-        BIGINT, ForeignKey("product_main.id"), unique=True, )
-    content: Mapped[str] = mapped_column(String, nullable=True)
-    description: Mapped[str] = mapped_column(String(1024), nullable=True)
-    create_time: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now)
-    update_time: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.now, onupdate=datetime.now)
-    product: Mapped["ProductMain"] = relationship(
-        'ProductMain', back_populates="detail")
 
 
 class ProductImage(Base):

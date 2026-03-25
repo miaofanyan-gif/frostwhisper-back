@@ -7,6 +7,7 @@ from app.middleware.exception import ExceptionMiddleware
 from app.api.v1.goods import router as goods_router
 from app.api.v1.users import router as users_router
 from app.api.v1.order import router as order_router
+from app.api.v1.shoppingcart import router as shoppingcart_router
 
 app = FastAPI(title="Frostwhisper Hanfu API", version="1.0.0")
 
@@ -38,6 +39,12 @@ app.include_router(
     order_router,
     prefix=f"{settings.API_V1_STR}/orders",
     tags=["orders"]
+)
+
+app.include_router(
+    shoppingcart_router,
+    prefix=f"{settings.API_V1_STR}/cart",
+    tags=["shoppingcart"]
 )
 
 

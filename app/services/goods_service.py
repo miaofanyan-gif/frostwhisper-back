@@ -4,6 +4,11 @@ from sqlalchemy.future import select
 from sqlalchemy import update, delete, func
 from redis import asyncio as aioredis
 from app.models.goods import ProductMain
+import logging
+from app.models.goods import ProductComment
+from app.schemas.goods import CommentCreate
+from fastapi import HTTPException
+
 
 CACHE_KEY_PREFIX = "fw:product:"
 
@@ -14,21 +19,19 @@ class GoodsService:
         self.redis = redis
 
     def get_product(self, product_id: int):
-        # 1. 尝试从缓存获取
-        cache_data = self.redis.get(f"{CACHE_KEY_PREFIX}{product_id}")
-        if cache_data:
-            return json.loads(cache_data)
+        query = select(ProductMain).where(ProductMain.is_deleted == 0)
+        query = query.where(ProductMain.id == product_id)
+        query = query.options(
+            selectinload(ProductMain.images),  # 关键：加载商品图片表
+            selectinload(ProductMain.skus),  # 关键：加载商品SKU表
+            selectinload(ProductMain.comments)
+        )
 
-        # 2. 缓存失效则查库 [cite: 51]
-        result = self.db.execute(
-            select(ProductMain).where(ProductMain.id == product_id))
-        product = result.scalars().first()
+        result = self.db.execute(query)
+        items = result.scalars().first()
+        logging.getLogger('sqlalchemy.engine').setLevel(logging.INFO)
 
-        if product:
-            # 3. 写入缓存，设置过期时间
-            self.redis.setex(f"{CACHE_KEY_PREFIX}{product_id}",
-                             3600, json.dumps(product.to_dict()))
-        return product
+        return items
 
     def list_products(self, keyword: str = None, category: int = None, scene: int = None, min_price: float = None,
                       page: int = 1,          # 默认第 1 页
@@ -115,3 +118,31 @@ class GoodsService:
             ProductMain.id == product_id).values(**data))
         self.db.commit()
         self.redis.delete(f"{CACHE_KEY_PREFIX}{product_id}")
+
+
+# tijiao pinglun
+
+    def create_comment(self, comment_data: CommentCreate, user_id: int):
+        # 1. 检查商品是否存在
+        product = self.db.query(ProductMain).filter(
+            ProductMain.id == comment_data.product_id,
+            ProductMain.is_deleted == 0
+        ).first()
+
+        if not product:
+            raise HTTPException(status_code=404, detail="商品不存在")
+
+        # 2. 创建评论
+        new_comment = ProductComment(
+            product_id=comment_data.product_id,
+            user_id=user_id.id,
+            username=user_id.username,
+            content=comment_data.content,
+            score=comment_data.score,
+        )
+
+        self.db.add(new_comment)
+        self.db.commit()
+        self.db.refresh(new_comment)  # 刷新获取数据库生成的ID
+
+        return new_comment

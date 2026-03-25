@@ -25,6 +25,30 @@ class ProductCreate(ProductBase):
     is_rental_available: bool = False
     is_customizable: bool = False
 
+# 图片子 Schema
+
+
+class ProductImage(BaseModel):
+    id: int
+    url: str
+    is_cover: int
+
+    class Config:
+        orm_mode = True
+
+# SKU 子 Schema
+
+
+class ProductSku(BaseModel):
+    id: int
+    color: str
+    size: str
+    price: float
+    stock: int
+
+    class Config:
+        orm_mode = True
+
 
 class ProductResponse(ProductBase):
     id: int
@@ -42,13 +66,29 @@ class ProductResponse(ProductBase):
     category_id: int
     category_name: Optional[str] = None
     status: int
-    create_time: datetime
+
+    class Config:
+        orm_mode = True
+        from_attributes = True
+
+
+class ProductComment(BaseModel):
+    id: Optional[int] = None
+    product_id: Optional[int] = None
+    score: Optional[int] = None
+    content: Optional[str] = None
+    user_id: Optional[int] = None
+    username: Optional[str] = None
 
     class Config:
         orm_mode = True
 
 
-# 定义分页返回结构
+class ProdoctDetailMain(ProductResponse):
+
+    images: List[ProductImage] = []  # ✅ 关联图片
+    skus: List[ProductSku] = []      # ✅ 关联SKU
+    comments: Optional[ProductComment] = None
 
 
 class ProductPaginationResponse(BaseModel):
@@ -59,3 +99,13 @@ class ProductPaginationResponse(BaseModel):
 
     class Config:
         from_attributes = True  # 确保能从 SQLAlchemy 对象转换
+
+
+# 前端提交评论用的模型
+class CommentCreate(BaseModel):
+    product_id: int  # 商品ID
+    content: str = Field(min_length=1, max_length=500)  # 评论内容
+    score: Optional[int] = Field(None, ge=1, le=5)  # 1-5星评分
+
+    class Config:
+        orm_mode = True
