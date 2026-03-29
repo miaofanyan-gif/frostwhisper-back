@@ -25,9 +25,6 @@ class UserMain(Base):
     password_hash = Column(String(128))
     email = Column(String(100), unique=True, index=True)
 
-    # 敏感信息加密存储
-    phone = Column(Integer, default=0)  # 加密存储手机号（示例，实际应使用字符串并加密）
-
     # 企划书核心分层
     user_tag = Column(Integer)
 
@@ -38,6 +35,15 @@ class UserMain(Base):
 
     is_active = Column(Boolean, default=True)
     last_login = Column(DateTime)
+    # 新增 to_dict 方法
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "username": self.username,
+
+            # 把你需要的字段都加进来
+        }
 
 
 class UserAddress(Base):

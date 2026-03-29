@@ -5,8 +5,8 @@ from sqlalchemy.orm import Session
 from typing import Optional, List
 from datetime import datetime
 import app.core.deps as deps
-from app.schemas.order import OrderCreateSchema, OrderStatus, OrderType
 from app.services.shoppingcart import CartService
+from app.services.user_service import UserService
 from app.schemas.shoppingcart import CartAdd, CartItemResponse, CartListResponse, CartUpdate
 from app.utils.response import UnifiedResponse
 from app.schemas.order import PaginatedResponse
@@ -36,9 +36,31 @@ def get_cart(
     current_user=Depends(get_current_user)
 ):
     service = CartService(db, current_user.id)
-    return UnifiedResponse.success(service.get_cart_list())
+    car_list = service.get_cart_list()
+    address_list = UserService.get_user_addresses(
+        db=db,
+        user_id=current_user.id
+    )
+    res = {}
+    # 组装返回数据
+    res_address = [
+        {
+            "id": addr.id,
+            "consignee": addr.consignee,
+            "country_code": addr.country_code,
+            "state": addr.state,
+            "city": addr.city,
+            "address": addr.address,
+            "zip_code": addr.zip_code,
+            "is_default": addr.is_default,
 
-# 更新购物车项
+            "user_id": addr.user_id
+        } for addr in address_list
+    ]
+
+    res["carts"] = car_list
+    res["address"] = res_address
+    return UnifiedResponse.success(res)
 
 
 @router.patch("/{cart_id}", response_model=UnifiedResponse[CartItemResponse])

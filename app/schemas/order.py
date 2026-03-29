@@ -11,125 +11,122 @@ import enum
 # 1. 必须先定义枚举，或者从 constants 导入
 
 
-class OrderType(str, enum.Enum):
-    PURCHASE = "Purchase"
-    RENTAL = "Rental"
-    CUSTOM = "Custom"
+# 订单项
+class OrderItemBase(BaseModel):
+    product_id: int
+    quantity: int
+
+# 创建订单请求
 
 
-class OrderStatus(int, enum.Enum):
-    PENDING = 0
-    PAID = 1
-    SHIPPED = 3
-    COMPLETED = 4
-    CANCELLED = 5
-
-# 2. 然后再在 Schema 中引用
+class OrderCreate(BaseModel):
+    # receiver_name: str
+    # receiver_phone: str
+    # receiver_address: str
+    cart_ids: List[int]  # 购物车ID列表
+    address_id: int
 
 
-class OrderBase(BaseModel):
-    order_type: OrderType
-    total_amount: Decimal = Field(..., max_digits=12, decimal_places=2)
-    currency: str = "USD"
-    shipping_address: Optional[str] = None
+# 订单项响应
 
 
-class OrderCreateSchema(OrderBase):
-    idempotency_key: str  # 幂等性校验用
-    user_id: int
-    price: Decimal = Field(..., gt=0)
-    deposit: Optional[Decimal] = None  # 租赁订单的押金
-    rental_days: Optional[int] = None  # 租赁订单的租期
-    custom_requirements: Optional[str] = None  # 定制订单的需求描述
-    payment_id: Optional[str] = None  # 模拟支付ID
-    # 差异化字段存入 extra_info
-    extra_info: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="租赁订单存 {'days': 7, 'deposit': 100}，定制存 {'size': 'L'}"
-    )
-
-
-class OrderResponse(OrderBase):
+class OrderItemResponse(BaseModel):
     id: int
-    order_sn: str
+    product_id: int
+    product_name: str
+    product_image: Optional[str] = None
+    price: Decimal
+    quantity: int
+    total_price: Decimal
+    deposit: Optional[Decimal] = None
+    rent_date: Optional[int] = None
+    is_rent: int
+
+    class Config:
+        orm_mode = True
+
+# 订单响应
+
+
+class OrderResponse(BaseModel):
+    id: int
+    order_no: str
+    total_amount: Decimal
+    pay_amount: Decimal
     order_status: int
+    pay_status: int
     create_time: datetime
 
-    model_config = ConfigDict(from_attributes=True)
+    consignee: str | None = None
+    address: str | None = None
+    country_code: str | None = None
+    state: str | None = None
+    city: str | None = None
+    zip_code: str | None = None
 
-
-class OrderBase(BaseModel):
-    order_type: OrderType
-    total_amount: Decimal
-    currency: str = "USD"
-    shipping_address: Optional[str] = None
-
-# 创建订单时的输入校验
-
-
-class OrderCreate(OrderBase):
-    item_id: int
-    idempotency_key: str  # 幂等性校验 Key
-
-    # 租赁订单特有
-    rental_days: Optional[int] = None
+    is_commented: int
     deposit: Optional[Decimal] = None
+    is_rent: int
+    items: List[OrderItemResponse] = []
 
-    # 定制订单特有
-    custom_requirements: Optional[str] = None
+    class Config:
+        orm_mode = True
+
+# 统一分页响应
 
 
-class OrderItemBase(BaseModel):
-    product_id: Optional[int] = None
-    product_name: str
-    price: Optional[float] = None
-    quantity: Optional[int] = None
+class OrderResponse(BaseModel):
+    id: int
+    order_no: str
     total_amount: float
-    currency: str
+    pay_amount: float
+    order_status: int
+    create_time: datetime
+    consignee: str | None = None
+    address: str | None = None
+    country_code: str | None = None
+    state: str | None = None
+    city: str | None = None
+    zip_code: str | None = None
+    items: List[OrderItemResponse] = []
+    deposit: Optional[Decimal] = None
+    is_rent: int
+    is_commented: int
 
     class Config:
         orm_mode = True
 
 
-class OrderItemVO(OrderItemBase):
+class OrderListResponse(BaseModel):
+    total: int
+    items: List[OrderResponse]
+
+
+class OrderItemResponse(BaseModel):
     id: int
-    order_id: int
-    order_sn: str
-    combo_id: Optional[int] = None
-    create_time: datetime
-    product: Optional[ProductResponse] = None  # 嵌套商品
+    product_id: int
+    product_name: str
+    price: Optional[float] = None
+    quantity: Optional[int] = None
+    total_amount: float
+    currency: Optional[str] = None
+    consignee: str | None = None
+    address: str | None = None
+    country_code: str | None = None
+    state: str | None = None
+    city: str | None = None
+    zip_code: str | None = None
+    is_commented: int
+    deposit: Optional[Decimal] = None
+    rent_date: Optional[int] = None
+    is_rent: int
 
-    # 返回给前端的订单详情
-
-
-class OrderRead(OrderBase):
-    id: int
-    user_id: int
-    total_amount: Decimal
-    currency: str
-    order_type: str
-    order_status: int
-    shipping_address: Optional[str] = None
-    create_time: datetime
-    update_time: datetime
-    deposit: Optional[Decimal] = None  # 租赁订单的押金
-    rental_days: Optional[int] = None  # 租赁订单的租期
-    custom_requirements: Optional[str] = None  # 定制订单的需求描述
-    payment_id: Optional[str] = None  # 模拟支付ID
-
-    order_items: List[OrderItemVO] = []  # ✅ 关键：嵌套订单项
-
-    # 允许从 SQLAlchemy 对象直接转换
-    model_config = ConfigDict(from_attributes=True)
-    # 差异化字段存入 extra_info
-    extra_info: Optional[Dict[str, Any]] = Field(
-        default=None,
-        description="租赁订单存 {'days': 7, 'deposit': 100}，定制存 {'size': 'L'}"
-    )
+    class Config:
+        orm_mode = True
 
 
 class PaginatedResponse(BaseModel):
-    items: List[OrderRead]  # 订单列表
+    items: List[OrderResponse]  # 订单列表
     total: int             # 总条数
     page: int              # 当前页码
     page_size: int         # 每页条数

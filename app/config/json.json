@@ -1,0 +1,301 @@
+{
+  "categories": [
+    {
+      "id": 5,
+      "code": "shape_system",
+      "name": "形制体系",
+      "type": "shape",
+      "children": [
+        {
+          "id": 10,
+          "code": "quju",
+          "name": "曲裾"
+        },
+        {
+          "id": 11,
+          "code": "zhiju",
+          "name": "直裾"
+        },
+        {
+          "id": 12,
+          "code": "qixiong_ruqun",
+          "name": "齐胸襦裙"
+        },
+        {
+          "id": 13,
+          "code": "qiyao_ruqun",
+          "name": "齐腰襦裙"
+        },
+        {
+          "id": 14,
+          "code": "duijin_ruqun",
+          "name": "对襟襦裙"
+        },
+        {
+          "id": 15,
+          "code": "jiaoling_ruqun",
+          "name": "交领襦裙"
+        },
+        {
+          "id": 16,
+          "code": "aoqun",
+          "name": "袄裙"
+        },
+        {
+          "id": 17,
+          "code": "mamian_qun",
+          "name": "马面裙"
+        },
+        {
+          "id": 18,
+          "code": "pifeng",
+          "name": "披风"
+        },
+        {
+          "id": 19,
+          "code": "bijia",
+          "name": "比甲"
+        },
+        {
+          "id": 20,
+          "code": "beizi",
+          "name": "褙子"
+        },
+        {
+          "id": 21,
+          "code": "banbi",
+          "name": "半臂"
+        },
+        {
+          "id": 22,
+          "code": "yuanling_pao",
+          "name": "圆领袍"
+        },
+        {
+          "id": 23,
+          "code": "zhiduo",
+          "name": "直裰/直身"
+        },
+        {
+          "id": 24,
+          "code": "daopao",
+          "name": "道袍"
+        },
+        {
+          "id": 25,
+          "code": "yesan",
+          "name": "曳撒"
+        },
+        {
+          "id": 26,
+          "code": "tieli",
+          "name": "贴里"
+        },
+        {
+          "id": 27,
+          "code": "daxiu_shan",
+          "name": "大袖衫"
+        },
+        {
+          "id": 28,
+          "code": "hezi_qun",
+          "name": "诃子裙"
+        },
+        {
+          "id": 29,
+          "code": "song_ku",
+          "name": "宋裤"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "code": "dynasty_style",
+      "name": "朝代风格",
+      "type": "dynasty",
+      "children": [
+        {
+          "id": 30,
+          "code": "qin_han",
+          "name": "秦汉风"
+        },
+        {
+          "id": 31,
+          "code": "wei_jin",
+          "name": "魏晋风"
+        },
+        {
+          "id": 32,
+          "code": "tang",
+          "name": "唐制"
+        },
+        {
+          "id": 33,
+          "code": "song",
+          "name": "宋制"
+        },
+        {
+          "id": 34,
+          "code": "ming",
+          "name": "明制"
+        }
+      ]
+    },
+    {
+      "id": 7,
+      "code": "gender",
+      "name": "穿着性别",
+      "type": "gender",
+      "children": [
+        {
+          "id": 35,
+          "code": "female",
+          "name": "女装汉服"
+        },
+        {
+          "id": 36,
+          "code": "male",
+          "name": "男装汉服"
+        },
+        {
+          "id": 37,
+          "code": "unisex",
+          "name": "男女通款汉服"
+        }
+      ]
+    },
+    {
+      "id": 8,
+      "code": "usage_scene",
+      "name": "用途场景",
+      "type": "scene",
+      "children": [
+        {
+          "id": 38,
+          "code": "daily",
+          "name": "日常汉服"
+        },
+        {
+          "id": 39,
+          "code": "formal",
+          "name": "礼服汉服"
+        },
+        {
+          "id": 40,
+          "code": "wedding",
+          "name": "婚服汉服"
+        },
+        {
+          "id": 41,
+          "code": "ritual",
+          "name": "祭祀/礼仪汉服"
+        },
+        {
+          "id": 42,
+          "code": "performance",
+          "name": "舞台表演汉服"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "code": "structure",
+      "name": "款式结构",
+      "type": "structure",
+      "children": [
+        {
+          "id": 43,
+          "code": "shangyi_xiachang",
+          "name": "上衣下裳（襦裙类）"
+        },
+        {
+          "id": 44,
+          "code": "shenyi",
+          "name": "深衣制"
+        },
+        {
+          "id": 45,
+          "code": "pao",
+          "name": "袍制"
+        },
+        {
+          "id": 46,
+          "code": "yiku",
+          "name": "衣裤制"
+        }
+      ]
+    },
+    {
+      "id": 47,
+      "code": "warehouse",
+      "name": "仓库",
+      "type": "warehouse",
+      "children": [
+        {
+          "id": 48,
+          "code": "north_america",
+          "name": "北美"
+        },
+        {
+          "id": 49,
+          "code": "europe",
+          "name": "欧洲"
+        },
+        {
+          "id": 50,
+          "code": "asia",
+          "name": "亚洲"
+        }
+      ]
+    },
+    {
+      "id": 51,
+      "code": "body_fit",
+      "name": "版型适配",
+      "type": "fit",
+      "isOpen": false,
+      "children": [
+        {
+          "id": 52,
+          "code": "asia_petite",
+          "name": "Asia Petite 娇小"
+        },
+        {
+          "id": 53,
+          "code": "asia_normal",
+          "name": "Asia Normal 标准"
+        },
+        {
+          "id": 54,
+          "code": "euro_normal",
+          "name": "Europe Normal 标准"
+        },
+        {
+          "id": 55,
+          "code": "euro_large",
+          "name": "Europe Large 偏大"
+        },
+        {
+          "id": 56,
+          "code": "usa_regular",
+          "name": "USA Regular 标准"
+        },
+        {
+          "id": 57,
+          "code": "usa_robust",
+          "name": "USA Robust 壮硕"
+        },
+        {
+          "id": 58,
+          "code": "usa_plussize",
+          "name": "USA Plus Size 大码"
+        },
+        {
+          "id": 59,
+          "code": "unisex_relaxed",
+          "name": "Unisex Relaxed 中性宽松"
+        }
+      ]
+    }
+  ]
+}

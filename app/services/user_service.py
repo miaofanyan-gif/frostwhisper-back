@@ -39,8 +39,7 @@ class UserService:
             email=user_in.email,
             password_hash=get_password_hash(user_in.password),
             member_level=1,
-            # phone=UserService.encrypt_data(user_in.phone),
-            phone=user_in.phone,
+
             user_tag=user_in.user_tag.value if user_in.user_tag else 0,  # 存储枚举值
         )
         db.add(db_user)
@@ -113,11 +112,11 @@ class UserService:
         return db_address
 
     @staticmethod
-    def reset_default_address(db: Session, id: int):
+    def reset_default_address(db: Session, user_id: int):
         """防范性逻辑：将该用户所有地址设为非默认"""
         db.execute(
             update(UserAddress)
-            .where(UserAddress.id == id)
+            .where(UserAddress.user_id == user_id)
             .values(is_default=False)
         )
         # 注意：这里不需要单独 commit，调用者会在添加新地址时统一 commit
@@ -126,16 +125,18 @@ class UserService:
     def get_user_addresses(db: Session, user_id: int):
         """获取用户所有地址（防范：只能查自己的）"""
         result = db.execute(
-            select(UserAddress).filter(UserAddress.user_id == user_id)
+            select(UserAddress)
+            .filter(UserAddress.user_id == user_id)
+            .order_by(UserAddress.id.desc())  # 按 ID 倒序
         )
         return result.scalars().all()
 
     @staticmethod
-    def delete_address(db: Session, user_id: int, address_id: int):
+    def delete_address(db: Session, user_id: int, id: int):
         """删除地址（核心防范：校验所属权）"""
         result = db.execute(
             select(UserAddress).filter(
-                UserAddress.id == address_id,
+                UserAddress.id == id,
                 UserAddress.user_id == user_id  # 必须校验 ID 和 UserID
             )
         )
@@ -145,4 +146,19 @@ class UserService:
 
         db.delete(address)
         db.commit()
+        return True
+
+    @staticmethod
+    def set_default_address(db: Session, id: int, user_id: int):
+        """防范性逻辑：将该用户所有地址设为非默认"""
+        UserService.reset_default_address(db, user_id)
+
+        db.execute(
+            update(UserAddress)
+            .where(UserAddress.id == id)
+            .where(UserAddress.user_id == user_id)
+            .values(is_default=True)
+        )
+        db.commit()
+
         return True

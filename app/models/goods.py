@@ -18,29 +18,38 @@ class ProductMain(Base):
     scene_id = Column(BIGINT, nullable=False)  # [cite: 485]
     name_cn = Column(String(200), nullable=False)  # [cite: 486]
     name_en = Column(String(200), nullable=False)  # [cite: 487]
-    dynasty_style = Column(String(50))  # [cite: 488]
-    fabric_info = Column(String(100))  # [cite: 489]
-    craft_info = Column(String(100))  # [cite: 490]
+
+    shape_system = Column(String(50), nullable=True, comment="形制体系")
+    dynasty_style = Column(String(50), nullable=True, comment="朝代风格")
+    gender = Column(String(50), nullable=True, comment="穿着性别")
+    usage_scene = Column(String(50), nullable=True, comment="用途场景")
+    structure = Column(String(50), nullable=True, comment="款式结构")
+    warehouse = Column(String(50), nullable=True, comment="仓库")
+    body_fit = Column(String(50), nullable=True, comment="版型适配")
+
     base_price = Column(DECIMAL(12, 2), nullable=False)  # [cite: 491]
-    market_price = Column(DECIMAL(12, 2), nullable=False)  # [cite: 491]
+    deposit = Column(DECIMAL(12, 2), nullable=False)  # [cite: 491]
     price = Column(DECIMAL(12, 2), nullable=False)  # [cite: 491]
     is_rental_available = Column(Boolean, default=False)  # [cite: 492]
     is_customizable = Column(Boolean, default=False)  # [cite: 493]
     create_time = Column(DateTime, default=datetime.now)  # [cite: 494]
     is_deleted = Column(Boolean, default=False)  # [cite: 498]
     status = Column(Integer, default=1)  # [cite: 495]
+    cover = Column(String(512))  # [cite: 496]
+
     update_time = Column(DateTime, default=datetime.now,
                          onupdate=datetime.now)  #
-    # 新增：反向关联到 OrderItem
-    order_items: Mapped[list["OrderItem"]] = relationship(
-        "OrderItem", back_populates="product"  # 指向 OrderItem.product
-    )
+    stock = Column(Integer, default=0)
+
     images: Mapped[List["ProductImage"]] = relationship(
         'ProductImage', back_populates="product")
     skus: Mapped[List["ProductSku"]] = relationship(
         'ProductSku', back_populates="product")
     comments: Mapped[List["ProductComment"]] = relationship(
-        'ProductComment', back_populates="product")
+        'ProductComment',      order_by="ProductComment.id.desc()", back_populates="product")
+    # 在你的 ProductMain 类末尾添加
+    related_products: Mapped[List["ProductRelated"]] = relationship(
+        'ProductRelated', back_populates="product")
 
 
 class ProductComment(Base):
@@ -113,3 +122,20 @@ class ProductImage(Base):
         DateTime, default=datetime.now)
     product: Mapped["ProductMain"] = relationship(
         "ProductMain", back_populates="images")
+
+
+class ProductRelated(Base):
+    __tablename__ = "product_related"
+
+    id: Mapped[BIGINT] = mapped_column(
+        BIGINT, primary_key=True, autoincrement=True)
+    product_id: Mapped[BIGINT] = mapped_column(
+        BIGINT, ForeignKey("product_main.id"), nullable=False, comment="主商品ID")
+    related_id: Mapped[BIGINT] = mapped_column(
+        BIGINT, nullable=False, comment="关联商品ID")
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, default=datetime.now, comment="创建时间")
+
+    # 关联主商品
+    product: Mapped["ProductMain"] = relationship(
+        "ProductMain", back_populates="related_products")

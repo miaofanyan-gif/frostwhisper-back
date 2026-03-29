@@ -19,6 +19,7 @@ class CartAdd(BaseModel):
 
 class CartUpdate(BaseModel):
     quantity: Optional[int] = Field(None, gt=0, description="更新数量")
+    rent_date: Optional[int] = Field(None, gt=0, description="租赁天数")
     selected: Optional[int] = Field(None, ge=0, le=1, description="0=未选中，1=选中")
 
     class Config:
@@ -33,6 +34,9 @@ class CartItemResponse(BaseModel):
     product_id: int
     quantity: int
     selected: int
+    is_rent: int
+    deposit: Optional[float] = None
+    rent_date: Optional[int] = None
     create_time: datetime
     update_time: datetime
     product: Optional[ProductResponse] = None  # 接受 ORM 对象

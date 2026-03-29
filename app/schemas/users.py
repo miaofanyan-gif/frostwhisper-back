@@ -7,7 +7,7 @@ class UserRegister(BaseModel):
     username: str = Field(..., min_length=3, max_length=50)
     password: str = Field(..., min_length=8)
     email: EmailStr
-    phone: int
+
     user_tag: UserLayerEnum = UserLayerEnum.NEWBIE
 
 
@@ -19,7 +19,6 @@ class UserLogin(BaseModel):
 class UserInfoRead(BaseModel):
     id: int
     username: str
-    phone: int
     email: EmailStr
     user_tag: UserLayerEnum
     member_level: str

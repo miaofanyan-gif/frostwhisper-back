@@ -5,6 +5,7 @@ from app.models.ShoppingCart import ShoppingCart
 from app.schemas.goods import ProductResponse
 from app.models.goods import ProductMain
 from app.schemas.shoppingcart import CartUpdate, CartItemResponse
+import os
 
 
 class CartService:
@@ -37,6 +38,9 @@ class CartService:
             cart_item = ShoppingCart(
                 user_id=self.user_id,
                 product_id=product_id,
+                is_rent=product.is_rental_available,  # 是否可租赁
+                deposit=product.deposit,  # 押金
+                rent_date=7,
                 quantity=quantity
             )
             self.db.add(cart_item)
@@ -56,9 +60,11 @@ class CartService:
             selectinload(ShoppingCart.product)  # 关键：加载关联商品
         ).filter(
             ShoppingCart.user_id == self.user_id,
+            ShoppingCart.is_deleted == 0,
         ).all()
 
         # 转换为响应格式（包含商品信息）
+        URL = os.getenv("URL", "http://127.0.0.1:8000")
         items = []
         for item in cart_items:
             item_dict = CartItemResponse.from_orm(item).dict()
@@ -66,8 +72,11 @@ class CartService:
                 "id": item.product.id,
                 "name": item.product.name,
                 "price": item.product.price,
+                "stock": item.product.stock,
+                "is_rent_available": item.product.is_rental_available,
+                "deposit": item.product.deposit,
                 # 取第一张图
-                "image": item.product.images[0].url if item.product.images else None
+                "image": URL+item.product.images[0].url if item.product.images else None
             }
             items.append(item_dict)
         return {"total": len(items), "items": items}
@@ -86,6 +95,8 @@ class CartService:
             cart_item.quantity = data.quantity
         if data.selected is not None:
             cart_item.selected = data.selected
+        if data.rent_date is not None:
+            cart_item.rent_date = data.rent_date
 
         self.db.commit()
         self.db.refresh(cart_item)

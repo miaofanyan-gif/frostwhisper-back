@@ -6,127 +6,195 @@ import uuid
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session, selectinload
 from typing import List, Optional
-from app.models.order import OrderMain, OrderType
-from app.schemas.order import OrderCreateSchema, OrderStatus, OrderType
-
-
+from app.models.order import OrderMain, OrderItem
+from app.schemas.order import OrderCreate
+from app.models.ShoppingCart import ShoppingCart
+from app.models.goods import ProductMain
+from fastapi import HTTPException
+from app.models.user import UserAddress
+import os
 redis_client = Redis(host='localhost', port=6379, db=2)
 
 
 class OrderService:
-    @staticmethod
-    def create_order(db: Session, user_id: int, order_data: OrderCreateSchema):
+    def __init__(self, db: Session, user_id: int):
+        self.db = db
+        self.user_id = user_id
 
-        # 1. 幂等性校验 (简单演示：根据请求体哈希或客户端传的ide_key)
-        idempotency_key = order_data.idempotency_key
-        if redis_client.get(f"order_lock:{idempotency_key}"):
-            raise Exception("Duplicate request processed.")
+    # 生成唯一订单号
+    def generate_order_no(self):
+        return str(uuid.uuid4().int)[:10]
 
-        # 2. 差异化计算金额
-        total = 0.0
-        ext_info = {}
+    # 从购物车创建订单
+    def create_order(self, data: OrderCreate):
 
-        if order_data.order_type == OrderType.RENTAL:
-            total = order_data.rent_price + order_data.deposit
-            ext_info = {"period": order_data.period,
-                        "return_date": order_data.return_date}
-        elif order_data.order_type == OrderType.CUSTOM:
-            total = order_data.custom_price
-            ext_info = {
-                "requirements": order_data.req, "lead_time": "21 days"}
-        else:
-            total = order_data.price
+        # 1. 查询选中的购物车商品
+        cart_items = self.db.query(ShoppingCart).filter(
+            ShoppingCart.id.in_(data.cart_ids),
+            ShoppingCart.user_id == self.user_id,
+            ShoppingCart.is_deleted == 0
+        ).all()
 
-        # 3. 生成订单（模拟自动支付和发货）
-        new_order = OrderMain(
-            order_sn=uuid.uuid4().hex,
-            user_id=user_id,
-            order_type=order_data.order_type,
-            total_amount=total,
-            deposit=order_data.deposit or 0,
-            # order_ext=ext_info,
-            order_status=OrderStatus.SHIPPED,  # 自动变更状态
-            payment_id=str(uuid.uuid4()),  # 模拟支付ID
-            tracking_no=f"SF{uuid.uuid4().hex[:10].upper()}"  # 模拟物流单号
+        if not cart_items:
+            raise HTTPException(
+                status_code=400, detail="selected cart items not found")
+
+        address = self.db.query(UserAddress).filter(
+            UserAddress.id == data.address_id,
+            UserAddress.user_id == self.user_id
+        ).first()
+
+        if not address:
+            raise HTTPException(
+                status_code=400, detail="shipping address not found")
+        # 2. 计算金额
+        total_amount = sum((item.product.price * item.quantity +
+                           item.product.deposit * item.quantity) for item in cart_items)
+        pay_amount = total_amount
+
+        # 3. 创建订单主表
+        order = OrderMain(
+            order_no=self.generate_order_no(),
+            user_id=self.user_id,
+            total_amount=total_amount,
+            pay_amount=pay_amount,
+            # ====================== 从地址表复制字段 ======================
+            consignee=address.consignee,        # 收件人
+            address=address.address,      # 详细地址
+            country_code=address.country_code,  # 国家代码
+            state=address.state,          # 州/省
+            city=address.city,            # 城市
+            zip_code=address.zip_code,         # 邮编
+            order_status=0,
+            pay_status=0,
+            # 新增字段
+            is_rent=0,
+            deposit=sum(item.deposit *
+                        item.quantity for item in cart_items),
         )
+        self.db.add(order)
+        self.db.flush()
+        # 4. 创建订单商品表
+        for item in cart_items:
+            order_item = OrderItem(
+                order_id=order.id,
+                order_no=order.order_no,
+                product_id=item.product_id,
+                product_name=item.product.name,
+                product_image=item.product.cover,
+                price=item.product.price,
+                quantity=item.quantity,
+                total_price=item.product.price * item.quantity,
+                # 新增字段
+                is_rent=item.is_rent,
+                deposit=item.deposit,
+                rent_date=item.rent_date
 
-        db.add(new_order)
-        db.commit()
-        db.refresh(new_order)
+            )
 
-        # 4. 触发异步统计任务
+            order_item.is_rent = item.is_rent or order_item.is_rent
+            self.db.add(order_item)
 
-        # from tasks import sync_order_stats
-        # sync_order_stats.delay(new_order.id)
+        # 5. 删除购物车
+        for item in cart_items:
+            item.is_deleted = 1
 
-        # 设置幂等性锁（5分钟）
-        # redis_client.setex(f"order_lock:{idempotency_key}", 300, "1")
+        self.db.commit()
+        return order
 
-        return new_order
+    # 获取我的订单列表
+    def get_my_orders(self, page: int = 1, size: int = 10):
+        query = self.db.query(OrderMain).filter(
+            OrderMain.user_id == self.user_id,
+            OrderMain.is_deleted == 0
+        ).order_by(OrderMain.id.desc())
 
-    @staticmethod
-    def get_order_list(
-        db: Session,
-        user_id: Optional[int] = None,
-        order_type: Optional[str] = None,
-        status: Optional[int] = None,
-        page: int = 1,
-        page_size: int = 20
-    ):
-     # 1. 构建基础查询语句，同时预加载 order_items
-        stmt = select(OrderMain).filter(OrderMain.is_deleted == 0).options(
-            selectinload(OrderMain.order_items)  # 关键：预加载关联的 OrderItem
-        )
-
-        # 2. 动态添加过滤条件
-        if user_id:
-            stmt = stmt.filter(OrderMain.user_id == user_id)
-        if order_type:
-            stmt = stmt.filter(OrderMain.order_type == order_type)
-        if status is not None:
-            stmt = stmt.filter(OrderMain.order_status == status)
-
-        # 3. 计算总数
-        count_stmt = select(func.count()).select_from(stmt.subquery())
-        total_result = db.execute(count_stmt)
-        total = total_result.scalar_one()
-
-        # 4. 分页与排序
-        stmt = stmt.order_by(desc(OrderMain.create_time))\
-                   .offset((page - 1) * page_size)\
-                   .limit(page_size)
-
-        # 5. 执行查询
-        result = db.execute(stmt)
-
-        orders = result.scalars().all()
-        for order in orders:
-            order.order_items
+        total = query.count()
+        order_main_list = query.offset((page - 1) * size).limit(size).all()
 
         return {
-            "items": orders,
+            "items": order_main_list,
             "total": total,
             "page": page,
-            "page_size": page_size
+            "page_size": size
         }
 
-    @staticmethod
-    def get_order_detail(db: Session, order_sn: str, user_id: Optional[int] = None):
-        """
-        查询订单详情
-        """
-        query = db.query(OrderMain).filter(
-            OrderMain.order_sn == order_sn,
-            OrderMain.is_deleted == 0
-        )
-
-        # 如果是移动端接口，通常需要校验是否为当前用户的订单
-        if user_id:
-            query = query.filter(OrderMain.user_id == user_id)
-
-        order = query.first()
+    # 取消订单（仅待付款可取消）
+    def cancel_order(self, order_id: int):
+        order = self.db.query(OrderMain).filter(
+            OrderMain.id == order_id,
+            OrderMain.user_id == self.user_id,
+            OrderMain.order_status == 0
+        ).first()
 
         if not order:
-            return None
+            raise HTTPException(status_code=400, detail="订单不可取消")
+
+        order.order_status = 4
+        self.db.commit()
+        return {"message": "cancel successful"}
+
+    def pay(self, order_id: int):
+        order = self.db.query(OrderMain).filter(
+            OrderMain.id == order_id,
+            OrderMain.user_id == self.user_id,
+            OrderMain.order_status == 0
+        ).first()
+
+        # ===================== 新增：支付前统一校验所有商品库存（不够直接失败） =====================
+        order_items = self.db.query(OrderItem).filter(
+            OrderItem.order_id == order_id).all()
+
+        for item in order_items:
+            product = self.db.query(ProductMain).filter(
+                ProductMain.id == item.product_id).first()
+            if not product:
+                raise HTTPException(
+                    status_code=400, detail=f"Product {item.product_id} does not exist")
+
+            # 库存 < 购买数量 → 禁止支付
+            if product.stock < item.quantity:
+                raise HTTPException(
+                    status_code=400, detail=f"Insufficient stock for product: {product.name}, remaining stock: {product.stock}")
+        # ==========================================================================================
+
+        # ===================== 原有逻辑不动 =====================
+        order.order_status = 1
+        order.pay_status = 2
+        order.pay_type = 1
+
+        # ===================== 新增：支付成功扣减库存 =====================
+        for item in order_items:
+            product = self.db.query(ProductMain).filter(
+                ProductMain.id == item.product_id).first()
+            if product:
+                product.stock -= item.quantity
+                if product.stock < 0:
+                    product.stock = 0
+        # ==========================================================
+
+        self.db.commit()
+        return {"message": "pay successful"}
+
+    def confirm_receipt(self, order_id: int):
+        order = self.db.query(OrderMain).filter(
+            OrderMain.id == order_id,
+            OrderMain.user_id == self.user_id,
+            OrderMain.order_status == 1
+        ).first()
+        order.order_status = 3
+
+        self.db.commit()
+        return {"message": "confirm receipt successful"}
+
+    def detail(self, order_id: int):
+        order = self.db.query(OrderMain).filter(
+            OrderMain.id == order_id
+        ).first()
+
+        URL = os.getenv("URL", "http://127.0.0.1:8000")
+        for item in order.items:
+            if (item.product_image):
+                item.product_image = URL+item.product_image
 
         return order

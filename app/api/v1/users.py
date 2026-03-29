@@ -10,6 +10,7 @@ from app.utils.response import UnifiedResponse
 from app.config.config import settings
 from app.core.security import create_access_token
 from datetime import timedelta
+from pydantic import BaseModel
 router = APIRouter()
 
 
@@ -30,10 +31,7 @@ def login(
     # 1. 验证身份
     user = UserService.authenticate(db, login_data)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="username or password is incorrect",
-        )
+        return UnifiedResponse.error(code=401, message="username or password is incorrect")
 
     # 2. 生成 Token (通常 sub 字段存用户 ID 或唯一标识)
     access_token_expires = timedelta(
@@ -41,7 +39,7 @@ def login(
     access_token = create_access_token(
         data={"sub": str(user.id)})
 
-    return {"access_token": access_token, "token_type": "bearer"}
+    return UnifiedResponse.success(data={"access_token": access_token, "token_type": "bearer", "user_info": user.to_dict()})
 
 
 @router.get("/me", response_model=UnifiedResponse[UserInfoRead])
@@ -66,7 +64,7 @@ def get_current_user_info(
     return UnifiedResponse.success(data=current_user)
 
 
-@router.post("/addaddress")
+@router.post("/add/address")
 def add_address(
     addr_in: AddressCreate,
     db: Session = Depends(deps.get_db),
@@ -94,15 +92,38 @@ def list_address(
     )
     return UnifiedResponse.success(data=res_data)
 
+# 1. 先建一个接收类
 
-@router.get("/set-address-default/{order_id}", response_model=UnifiedResponse[AddressOut])
+
+class AddressDefaultRequest(BaseModel):
+    id: int  # 对应前端传的 id
+
+
+@router.post("/address/default/", response_model=UnifiedResponse)
 def reset_default_address(
+    data: AddressDefaultRequest,
     db: Session = Depends(deps.get_db),
     user: UserMain = Depends(deps.get_current_user)
 ):
     """添加收货地址：敏感地址字段加密存储"""
-    res_data = UserService.reset_default_address(
+    res_data = UserService.set_default_address(
         db=db,
-        user_id=user.id
+        user_id=user.id,
+        id=data.id
+    )
+    return UnifiedResponse.success(data=res_data)
+
+
+@router.post("/address/delete/", response_model=UnifiedResponse)
+def reset_default_address(
+    data: AddressDefaultRequest,
+    db: Session = Depends(deps.get_db),
+    user: UserMain = Depends(deps.get_current_user)
+):
+    """添加收货地址：敏感地址字段加密存储"""
+    res_data = UserService.delete_address(
+        db=db,
+        user_id=user.id,
+        id=data.id
     )
     return UnifiedResponse.success(data=res_data)
