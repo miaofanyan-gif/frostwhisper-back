@@ -26,7 +26,7 @@ class Settings(BaseSettings):
 
     # 关键配置：让 Pydantic 忽略 .env 中多余的字段，防止报错
     model_config = SettingsConfigDict(
-        env_file=".env.dev",
+        env_file=".env.prod",
         extra="ignore"  # 允许忽略 .env 中未定义的字段
     )
 
