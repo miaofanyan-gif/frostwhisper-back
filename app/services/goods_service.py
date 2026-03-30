@@ -45,7 +45,8 @@ class GoodsService:
             ProductMain.status == 1
         ).all()
 
-        URL = os.getenv("URL", 'http://www.bestecho.asia')  # 从环境变量获取 URL 前缀
+        # 从环境变量获取 URL 前缀
+        URL = os.getenv("URL", 'http://www.bestecho.asia:8080')
 
         # 4. 转换成 Schema 并返回
         result = []
@@ -84,7 +85,8 @@ class GoodsService:
         # 3. 塞入字段
         # items.related_products = related_list
 
-        URL = os.getenv("URL", 'http://www.bestecho.asia')  # 从环境变量获取 URL 前缀
+        # 从环境变量获取 URL 前缀
+        URL = os.getenv("URL", 'http://www.bestecho.asia:8080')
 
         # 处理图片列表与封面图
         images = []
@@ -194,7 +196,8 @@ class GoodsService:
 
         # ===================== 【关键】返回数据增加所有筛选字段 =====================
         result = []
-        URL = os.getenv("URL", 'http://www.bestecho.asia')  # 从环境变量获取 URL 前缀
+        # 从环境变量获取 URL 前缀
+        URL = os.getenv("URL", 'http://www.bestecho.asia:8080')
 
         for p in items:
             cover_image = None
@@ -246,6 +249,7 @@ class GoodsService:
 
 
 # tijiao pinglun
+
 
     def create_comment(self, comment_data: CommentCreate, user_id: int):
         # 1. 检查商品是否存在

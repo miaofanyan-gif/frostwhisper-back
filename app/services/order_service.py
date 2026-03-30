@@ -192,7 +192,8 @@ class OrderService:
             OrderMain.id == order_id
         ).first()
 
-        URL = os.getenv("URL", 'http://www.bestecho.asia')  # 从环境变量获取 URL 前缀
+        # 从环境变量获取 URL 前缀
+        URL = os.getenv("URL", 'http://www.bestecho.asia:8080')
         for item in order.items:
             if (item.product_image):
                 item.product_image = URL+item.product_image
