@@ -45,7 +45,7 @@ class GoodsService:
             ProductMain.status == 1
         ).all()
 
-        URL = os.getenv("URL")
+        URL = os.getenv("URL", 'http://www.bestecho.asia/')  # 从环境变量获取 URL 前缀
 
         # 4. 转换成 Schema 并返回
         result = []
@@ -84,7 +84,7 @@ class GoodsService:
         # 3. 塞入字段
         # items.related_products = related_list
 
-        URL = os.getenv("URL")
+        URL = os.getenv("URL", 'http://www.bestecho.asia/')  # 从环境变量获取 URL 前缀
 
         # 处理图片列表与封面图
         images = []
@@ -194,7 +194,7 @@ class GoodsService:
 
         # ===================== 【关键】返回数据增加所有筛选字段 =====================
         result = []
-        URL = os.getenv("URL")
+        URL = os.getenv("URL", 'http://www.bestecho.asia/')  # 从环境变量获取 URL 前缀
 
         for p in items:
             cover_image = None
