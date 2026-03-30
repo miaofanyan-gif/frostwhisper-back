@@ -64,7 +64,7 @@ class CartService:
         ).all()
 
         # 转换为响应格式（包含商品信息）
-        URL = os.getenv("URL", "http://127.0.0.1:8000")
+        URL = os.getenv("URL", "http://www.bestecho.asia")
         items = []
         for item in cart_items:
             item_dict = CartItemResponse.from_orm(item).dict()
