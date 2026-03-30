@@ -192,7 +192,7 @@ class OrderService:
             OrderMain.id == order_id
         ).first()
 
-        URL = os.getenv("URL", "www.bestecho.asia")
+        URL = os.getenv("URL")
         for item in order.items:
             if (item.product_image):
                 item.product_image = URL+item.product_image
