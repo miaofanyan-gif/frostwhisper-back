@@ -1,25 +1,32 @@
 fastapi==0.109.0
 uvicorn[standard]==0.27.0
 python-multipart==0.0.6
---- Async Database & ORM ---
+
+# --- Async Database & ORM ---
 sqlalchemy==2.0.25
 asyncmy==0.2.9
 alembic==1.13.1
 aiomysql==0.2.0
---- Async Redis Cache ---
+
+# --- Async Redis Cache ---
 redis==5.0.1
---- Data Validation & Configuration ---
+
+# --- Data Validation & Configuration ---
 pydantic==2.5.3
 pydantic[email]==2.5.3
 pydantic-settings==2.1.0
 python-dotenv==1.0.0
 argon2_cffi==21.3.0
---- Security & Authentication ---
+
+# --- Security & Authentication ---
 python-jose[cryptography]==3.3.0
 passlib[bcrypt]==1.7.4
---- Async HTTP Client ---
+
+# --- Async HTTP Client ---
 httpx==0.26.0
---- Production Deployment ---
+
+# --- Production Deployment ---
 gunicorn==21.2.0
---- Dependencies ---
+
+# --- Dependencies ---
 greenlet==3.0.3
